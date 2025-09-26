@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>استعلام بيانات الحوافز</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+ <style>
+  body {
+    font-family: 'PT Bold Heading', sans-serif; /* تغيير الخط */
+    direction: rtl;
+    margin: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* لجعل المحتوى في المنتصف أفقيًا */
+    justify-content: flex-start; /* محاذاة المحتوى رأسيًا من الأعلى */
+  }
+
+  input, button {
+    margin: 10px 0;
+    padding: 8px;
+    display: block;
+    text-align: center; /* محاذاة النص داخل الحقول */
+  }
+
+  button {
+    background-color: green; /* لون الزر أخضر */
+    color: white; /* لون النص داخل الزر */
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  button:hover {
+    background-color: darkgreen; /* تأثير عند المرور على الزر */
+  }
+
+  table {
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  td, th {
+    border: 1px solid #333;
+    padding: 6px 12px;
+    text-align: center; /* لجعل النص داخل الجدول في المنتصف */
+  }
+</style>
+</head>
+<body>
+  <h2>دائرة التعليم الجامعي الاهلي/تطبيق استعلام بيانات الحوافز/برمجة م.م فراس مكية</h2>
+
+  <label>أدخل اسمك الرباعي:</label><br>
+  <input type="text" id="employeeName" placeholder="اكتب اسمك هنا"><br>
+
+  <label>أدخل رمزك الخاص:</label><br>
+  <input type="text" id="employeeCode" placeholder="اكتب الكود هنا"><br>
+
+  <button onclick="searchEmployee()">اضغط هنا لعرض البيانات</button>
+
+  <div id="result"></div>
+
+  <script>
+    let excelData = [];
+
+    // تحميل ملف الإكسل
+    fetch("employees.xlsx")
+      .then(res => res.arrayBuffer())
+      .then(data => {
+        let workbook = XLSX.read(data, { type: "array" });
+        let firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        excelData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        console.log("تم تحميل ملف الموظفين");
+      })
+      .catch(err => console.error("خطأ في تحميل الملف:", err));
+
+    function searchEmployee() {
+      let name = document.getElementById('employeeName').value.trim();
+      let code = document.getElementById('employeeCode').value.trim();
+
+      if (!name || !code || excelData.length === 0) {
+        alert("رجاءً أدخل الاسم والكود وانتظر تحميل الملف.");
+        return;
+      }
+
+      let headers = excelData[0]; // سطر الرأس
+      let resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = ""; // مسح النتائج السابقة
+      let found = false;
+
+      // البحث يبدأ من الصف الثاني (index 1)
+      for (let i = 1; i < excelData.length; i++) {
+        let row = excelData[i];
+        let employeeName = row[1] ? row[1].toString().trim() : ""; // العمود B
+        let employeeCode = row[2] ? row[2].toString().trim() : ""; // العمود C
+
+        if (employeeName === name && employeeCode === code) {
+          // تم العثور على الموظف
+          let table = "<table><tr>";
+          headers.forEach(h => table += `<th>${h}</th>`);
+          table += "</tr><tr>";
+          headers.forEach((_, idx) => {
+            table += `<td>${row[idx] !== undefined ? row[idx] : ""}</td>`;
+          });
+          table += "</tr></table>";
+
+          resultDiv.innerHTML = table;
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        resultDiv.innerHTML = "<p style='color:red;'>الاسم أو الكود غير مطابق!</p>";
+      }
+    }
+  </script>
+</body>
+
+</html>
